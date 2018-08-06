@@ -1,0 +1,43 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.9.0/plugin.yaml
+  - types/demo-types.yaml
+
+
+inputs:
+  cloud_region:
+    description: "Test input"
+    default: WEST
+
+node_types:
+  tr.ent.compute.azure.webserver:
+    derived_from: cloudify.nodes.DeploymentProxy
+    properties:
+      location:
+        default: { get_input: cloud_region }
+      network_name:
+        default: "azure-simple-network"
+      resource_config:
+        default:
+          blueprint:
+            id: vnf-blueprint
+            use_external_resource: True
+          deployment:
+            inputs:
+              location: { get_property: [SELF, location] }
+              network_deployment_name: { get_property: [SELF, network_name] }
+            outputs:
+              endpoint: endpoint
+              vm-fqdn: vm-fqdn
+      vm-instance-fqdn:
+        default: { get_property: [SELF, resource_config, deployment, outputs, vm-fqdn] }
+
+
+
+node_templates:
+  test_node:
+    type: tr.ent.compute.azure.webserver
+    properties:
+      vm-instance-fqdn:
